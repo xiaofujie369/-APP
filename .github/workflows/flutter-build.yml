@@ -1,4 +1,4 @@
-name: Build Koyun Flutter APK
+name: Build and Release Koyun Flutter APK
 
 on:
   workflow_dispatch:
@@ -13,11 +13,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Flutter
+      - name: Setup Flutter (use master channel for latest Dart 3.10+)
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.5'
-          channel: 'stable'
+          channel: 'master'
           cache: true
 
       - name: Setup Java
@@ -32,6 +31,9 @@ jobs:
           echo "FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn" >> $GITHUB_ENV
           flutter config --no-analytics
 
+      - name: Check Flutter version
+        run: flutter --version
+
       - name: Get dependencies
         run: flutter pub get
 
@@ -43,3 +45,16 @@ jobs:
         with:
           name: koyun-release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Create GitHub Release and Upload APK
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/app/outputs/flutter-apk/app-release.apk
+          tag_name: v${{ github.run_number }}
+          name: "Koyun Flutter APK Build #${{ github.run_number }}"
+          body: |
+            自动构建版本 #${{ github.run_number }}
+            ✅ Flutter Master + Dart 3.10+
+            📱 生成的可云安卓安装包 (.apk)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
